@@ -1,0 +1,7 @@
+void Function(string arg1, int arg2){
+
+}
+
+main() {
+    NewFunction();
+}

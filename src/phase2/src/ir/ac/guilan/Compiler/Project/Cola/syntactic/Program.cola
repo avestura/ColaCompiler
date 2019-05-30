@@ -1,0 +1,20 @@
+main() {
+    Method();
+}
+
+void Method(){
+
+    int X = 10;
+    int Y = 0;
+
+    if(X > Y) {
+        while (X > Y) {
+            io.println("Hello World!");
+            Y++;
+        }
+    }
+    else{
+        io.println("Bye!");
+    }
+
+}

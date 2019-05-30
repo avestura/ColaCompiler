@@ -1,0 +1,68 @@
+// Member initialization syntax
+
+class Person
+{
+   string  Name;
+   int     Age;
+   int     Items[];
+   string  Description;
+
+   // fields
+   int @top;
+   T @vector[100];
+
+   // properties
+   int   Length { get { return top; } set { top = value; } }
+
+}
+
+/*
+    Main method
+    Author: Ebrahimpour, Hassani Moughadam
+*/
+main()
+{
+
+    if( xml =~ /()/ as book ) {
+      io.println(book.$1);
+
+   int number1 = +5;
+   int number2 = -6;
+   int number3 = 0;
+   float number4 = .256;
+   float number5 = .256f;
+   float number5 = -0.88;
+
+
+   var p = new Person {
+      Items: {1,2,3,4,5},
+      Name: "Melvin",
+      Age:  41,
+      Weight: 70.3,
+      Money: 14684l,
+      Description = "This is a description...."   // equals sign also works
+   };
+
+   var itemError = new Error {
+      ErrorAddress: 0x536C,
+      InfoAddress: 0xcfa2,
+      Acc: 12.3
+   }
+
+    string words[] = {
+     "Handmaid", "Tale", "statically", "initialized", "dynamic", "array", "!"
+    };
+
+   // Negative match
+   for(var word in words)
+      if(word !~ /^(Handmaid|Tale)$/)
+        continue;
+      io.println(word);
+
+   io.println(p.Name);
+   io.println(p.Age);
+   io.println(p.Description);
+   foreach(var item in p.Items) {
+      io.println(item);
+   }
+}

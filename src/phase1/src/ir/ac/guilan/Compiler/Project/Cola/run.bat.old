@@ -1,0 +1,4 @@
+call jflex Cola.flex
+call javac -classpath .;"E:\Study\Terms\Term 6\Compiler Design\java-cup\java-cup-11b-runtime.jar";"E:\Study\Terms\Term 6\Compiler Design\java-cup\java-cup-11b.jar" Lexer.java
+call java Lexer Program.cola
+del  Lexer.class

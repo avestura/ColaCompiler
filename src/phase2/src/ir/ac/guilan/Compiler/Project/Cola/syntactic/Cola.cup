@@ -1,0 +1,118 @@
+/* Simple +/-/* expression language; parser evaluates constant expressions on the fly*/
+package ir.ac.guilan.Compiler.Project.Cola.syntactic;
+import java_cup.runtime.*;
+import ir.ac.guilan.Compiler.Project.Cola.lexical.*;
+
+parser code {:
+    // Connect this parser to a scanner!
+    Lexer s;
+    Parser(Lexer s) { this.s = s;}
+
+
+:};
+
+/* define how to connect to the scanner! */
+init with {: /* s.init(); */ :};
+scan with {: return s.next_token(); :};
+
+/* Terminals (tokens returned by the scanner). */
+terminal            TypeDef,
+                    MemDef,
+                    ForLoop,
+                    In,
+                    Return,
+                    If,
+                    Identifier,
+                    Semi,
+                    BeginBlock,
+                    EndBlock,
+                    LBracelet,
+                    RBracelet,
+                    Colon,
+                    Comma,
+                    Assign,
+                    Operator,
+                    Comparator,
+                    Dot,
+                    LPar,
+                    RPar,
+                    PlusPlus,
+                    MinusMinus,
+                    Begin,
+                    End,
+                    True,
+                    False,
+                    While,
+                    Else,
+                    EntryPoint;
+
+terminal String     StringConst;
+terminal Class      Var;
+terminal Integer    Type;
+terminal Integer    NumValue;        // our scanner provides numbers as integers
+
+/* Non terminals */
+non terminal            empty;
+non terminal            MethodDeclare;
+non terminal            MethodCall;
+non terminal            Assignment;
+non terminal Object     Expression;
+non terminal            Loop;
+non terminal            Statements;
+non terminal            Statement;
+non terminal            IfStatement;
+non terminal            ElseStatement;
+non terminal Boolean    Condition;
+non terminal            BaseName;
+non terminal            AssignmentVal;
+non terminal            EntryBlock;
+non terminal            Code;
+non terminal            Arg;
+
+/* Precedences */
+// Left means: Left Associative (Solve left-most part first)
+//precedence left Plus, Minus;
+//precedence left Mult;
+//precedence left UMinus;
+
+
+
+/* The grammar rules */
+Code           ::= MethodDeclare Code |  EntryBlock Code | empty;
+
+EntryBlock     ::= EntryPoint BeginBlock Statements EndBlock {: System.out.println(">> Code entry point found!"); :};
+
+Statements     ::= Statement Semi Statements {: System.out.println(">> Statement!"); :} |
+                   IfStatement {: System.out.println("New if statement!"); :} |
+                   Loop {: System.out.println("New While Loop!"); :} |
+                   empty;
+
+Statement      ::= Assignment | MethodCall;
+
+Assignment     ::= Identifier:i Assign AssignmentVal {: System.out.println("Assigning Value to \'" + i + "\'!"); :} |
+                   Type Identifier:i Assign AssignmentVal {: System.out.println(">> New variable declared with name \'" + i + "\'!"); :} |
+                   Identifier:i PlusPlus {: System.out.println("Variable \'" + i + "\' incremented."); :} |
+                   PlusPlus:i Identifier {: System.out.println("Variable \'" + i + "\' incremented."); :}|
+                   Identifier:i MinusMinus {: System.out.println("Variable \'" + i + "\' decremented."); :}|
+                   MinusMinus Identifier:i {: System.out.println("Variable \'" + i + "\' decremented."); :}
+                   ;
+
+AssignmentVal ::= Identifier | StringConst | NumValue;
+
+IfStatement    ::= If LPar Condition RPar BeginBlock Statements EndBlock ElseStatement;
+ElseStatement  ::= Else BeginBlock Statements EndBlock {: System.out.println("If statement has an else part."); :} |
+                   empty;
+
+MethodDeclare  ::= Type Identifier:i LPar RPar BeginBlock Statements EndBlock {: System.out.println(">> Method " + i.toString() + " Declared!"); :};
+
+MethodCall     ::= Identifier:i LPar Arg RPar {: System.out.println(">> Method " + i.toString() + " called!"); :} |
+                   BaseName Identifier:i LPar Arg RPar {: System.out.println(">> Method " + i.toString() + " called!"); :};
+
+Arg            ::= NumValue | StringConst | Identifier | empty;
+
+BaseName       ::= BaseName Identifier Dot | Identifier Dot;
+
+Condition      ::= Identifier Comparator Identifier | True | False;
+
+Loop           ::= While LPar Condition RPar BeginBlock Statements EndBlock;
+empty          ::= ;

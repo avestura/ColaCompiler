@@ -1,0 +1,219 @@
+/* Simple +/-/* expression language; parser evaluates constant expressions on the fly*/
+package ir.ac.guilan.Compiler.Project.Cola.syntactic;
+import java_cup.runtime.*;
+import ir.ac.guilan.Compiler.Project.Cola.lexical.*;
+import java.util.*;
+
+import ir.ac.guilan.Compiler.Project.Cola.lexical.Constants.*;
+import ir.ac.guilan.Compiler.Project.Cola.syntactic.sym.Identifier;
+
+parser code {:
+    // Connect this parser to a scanner!
+    Lexer s;
+    Parser(Lexer s) { this.s = s;}
+
+
+:};
+
+action code {:
+    Map<String, Integer> sourceTypes = new HashMap();
+
+    Map<String, ArrayList<Integer>> sourceSignatures = new HashMap();
+
+    public String regularName(Integer type){
+        if(type == TypeInt) return "Integer";
+        if(type == TypeString) return "String";
+        return "";
+    }
+
+        public String argTypeWriter(ArrayList<Integer> list){
+            String type = "";
+            for(int i = 0; i < list.size() - 1; i++){
+               type += regularName(list.get(i)) + ", ";
+            }
+            type += regularName(list.get(list.size() - 1));
+
+            return type;
+        }
+
+        public  void argCheck(ArrayList<Integer> arg1, ArrayList<Integer> arg2, String funcName){
+            if(arg1 == null || arg2 == null) {
+                System.out.println("Function \'" + funcName + "\' doesn't exist in the current context." );
+                return;
+            }
+            if(arg1.size() != arg2.size())
+                System.out.println("Method signature mismatch! \'" + funcName + "\' defined with " + arg1.size() + " arguments. You've provided " + arg2.size() + " arguments.");
+            else{
+                boolean isCorrect = true;
+                Integer provided = 0;
+                Integer expected = 0;
+                for(int i = 0; i < arg1.size(); i++){
+                    if(!arg1.get(i).equals(arg2.get(i))) {
+                        expected = arg1.get(i); provided = arg2.get(i);
+                        isCorrect =false; break;
+                    }
+                }
+
+                if(isCorrect)
+                    System.out.println("Method call with name \'" + funcName + "\' was ok!");
+                else
+                    System.out.println("Method call mismatch! Expected arg type: \'" + regularName(expected) + "\', provided: \'" + regularName(provided));
+            }
+        }
+
+:}
+
+/* define how to connect to the scanner! */
+init with {: /* s.init(); */ :};
+scan with {: return s.next_token(); :};
+
+/* Terminals (tokens returned by the scanner). */
+terminal            TypeDef,
+                    MemDef,
+                    ForLoop,
+                    In,
+                    Return,
+                    If,
+                    Semi,
+                    BeginBlock,
+                    EndBlock,
+                    LBracelet,
+                    RBracelet,
+                    Colon,
+                    Comma,
+                    Assign,
+                    Operator,
+                    Comparator,
+                    Dot,
+                    LPar,
+                    RPar,
+                    PlusPlus,
+                    MinusMinus,
+                    Begin,
+                    End,
+                    True,
+                    False,
+                    While,
+                    Else,
+                    EntryPoint;
+
+terminal String     Identifier;
+terminal String     StringConst;
+terminal Class      Var;
+terminal Integer    Type;
+terminal Integer    NumValue;        // our scanner provides numbers as integers
+
+/* Non terminals */
+non terminal                  empty;
+non terminal                  MethodDeclare;
+non terminal                  MethodCall;
+non terminal                  Assignment;
+non terminal Object           Expression;
+non terminal                  Loop;
+non terminal                  Statements;
+non terminal                  Statement;
+non terminal                  IfStatement;
+non terminal                  ElseStatement;
+non terminal Boolean          Condition;
+non terminal                  BaseName;
+non terminal TypeValuePair    AssignmentVal;
+non terminal                  EntryBlock;
+non terminal                  Code;
+non terminal  ArrayList<Integer> MethodSignature;
+non terminal  ArrayList<Integer> Signature;
+
+non terminal  ArrayList<Integer> MethodArgs;
+non terminal  ArrayList<Integer> Args;
+non terminal  TypeValuePair Arg;
+
+/* Precedences */
+// Left means: Left Associative (Solve left-most part first)
+//precedence left Plus, Minus;
+//precedence left Mult;
+//precedence left UMinus;
+
+
+
+/* The grammar rules */
+Code           ::= MethodDeclare Code |  EntryBlock Code | empty;
+
+EntryBlock     ::= EntryPoint BeginBlock Statements EndBlock {: System.out.println(">> Code entry point found!"); :};
+
+Statements     ::= Statement Semi Statements {: :} |
+                   IfStatement {: System.out.println("New if statement!"); :} |
+                   Loop {: System.out.println("New While Loop!"); :} |
+                   empty;
+
+Statement      ::= Assignment | MethodCall;
+
+Assignment     ::= Identifier:i Assign AssignmentVal:b {:
+                        System.out.println("Assigning Value \'" + b.Value +"\' to \'" + i + "\'!");
+                        if(!sourceTypes.get(i).equals(b.Type)){
+                            System.out.println("error: Type '" + regularName(b.Type) +  "' doesn't match type '" + regularName(sourceTypes.get(i)) + "'.");
+                        }
+                        else{
+                            System.out.println("Assignment was ok.");
+                        }
+                    :} |
+                   Type:t Identifier:i Assign AssignmentVal:v {:
+                        sourceTypes.put(i, v.Type);
+                        System.out.println(">> New variable declared with name \'" + i + "\' with value \'" + v.Value + "\'!");
+                    :} |
+                   Identifier:i PlusPlus {: System.out.println("Variable \'" + i + "\' incremented."); :} |
+                   PlusPlus:i Identifier {: System.out.println("Variable \'" + i + "\' incremented."); :}|
+                   Identifier:i MinusMinus {: System.out.println("Variable \'" + i + "\' decremented."); :}|
+                   MinusMinus Identifier:i {: System.out.println("Variable \'" + i + "\' decremented."); :}
+                   ;
+
+AssignmentVal ::= Identifier:i {: RESULT = new TypeValuePair(i, Identifier); :}
+                  | StringConst:i {: RESULT = new TypeValuePair(i, TypeString); :}
+                  | NumValue:i {: RESULT = new TypeValuePair("" + i, TypeInt); :};
+
+IfStatement    ::= If LPar Condition RPar BeginBlock Statements EndBlock ElseStatement;
+ElseStatement  ::= Else BeginBlock Statements EndBlock {: System.out.println("If statement has an else part."); :} |
+                   empty;
+
+MethodDeclare  ::= Type Identifier:i LPar MethodSignature:s RPar BeginBlock Statements EndBlock {:
+                    if(s == null) sourceSignatures.put(i, null);
+                    else sourceSignatures.put(i, s);
+                    System.out.println(">> Method " + i.toString() + " Declared! with arg types: " + argTypeWriter(s));
+                    :};
+
+MethodSignature ::= Signature:s {: RESULT = s; :} | empty {: RESULT = null; :};
+Signature       ::= Signature:s Comma Type:t Identifier {:
+                        s.add(t);
+                        RESULT = s;
+                    :}
+                   | Type:s Identifier {:
+                        ArrayList<Integer> list = new ArrayList<>();
+                        list.add(s);
+                        RESULT = list;
+                    :};
+
+MethodCall     ::= Identifier:i LPar MethodArgs:a RPar {:
+                        System.out.println(">> Method " + i.toString() + " called!");
+                        argCheck(sourceSignatures.get(i), a, i);
+                   :} |
+                   BaseName Identifier:i LPar MethodArgs RPar {: System.out.println(">> Method " + i.toString() + " called!"); :};
+
+MethodArgs     ::= Args:i {: RESULT = i; :} | empty {: RESULT = new ArrayList<Integer>(); :};
+Args           ::= Args:i Comma Arg:t {:
+                    i.add(t.Type);
+                    RESULT = i;
+               :}
+                | Arg:t {:
+                    ArrayList<Integer> argL = new ArrayList<>();
+                    argL.add(t.Type);
+                    RESULT = argL;
+                 :};
+Arg            ::= NumValue:i {: RESULT = new TypeValuePair("" + i, TypeInt); :}
+                   | StringConst:i {: RESULT = new TypeValuePair("" + i, TypeString); :}
+                   | Identifier:i {: RESULT = new TypeValuePair(i, Identifier); :}
+                   ;
+
+BaseName       ::= BaseName Identifier Dot | Identifier Dot;
+
+Condition      ::= Identifier Comparator Identifier | True | False;
+
+Loop           ::= While LPar Condition RPar BeginBlock Statements EndBlock;
+empty          ::= ;
